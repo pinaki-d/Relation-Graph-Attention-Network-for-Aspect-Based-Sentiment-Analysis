@@ -1,4 +1,4 @@
-# Stargazers : Himanshu Patel(204101029), Yashwant Patidar(), Telem Joyson Singh(), Pinaki Dash().
+# Stargazers : Himanshu Patel(204101029), Yashwant Patidar(), Telem Joyson Singh(206155004), Pinaki Dash().
 # CS529 Project : Relational-Graph-Attention-Network-for-Aspect-based-Sentiment-Analysis
 This repo contains the PyTorch implementaion for the paper [Relational Graph Attention Network for Aspect-based Sentiment Analysis](https://arxiv.org/abs/2004.12362).
 
