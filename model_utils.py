@@ -71,6 +71,83 @@ class LinearAttention(nn.Module):
 
         return out
 
+class LinearAttention(nn.Module):
+    '''
+    re-implement of gat's attention
+    '''
+    def __init__(self, in_dim = 300, mem_dim = 300):
+        # in dim, the dimension of query vector
+        super().__init__()
+        self.linear = nn.Linear(in_dim, mem_dim)
+        self.fc = nn.Linear(mem_dim * 2, 1)
+        self.leakyrelu = nn.LeakyReLU(1e-2)
+
+    def forward(self, feature, aspect_v, dmask):
+        '''
+        C feature/context [N, L, D]
+        Q dep_tags_v          [N, D]
+        mask dmask          [N, L]
+        '''
+
+        Q = self.linear(aspect_v) # (N, D)
+        Q = Q.unsqueeze(1)  # (N, 1, D)
+        Q = Q.expand_as(feature) # (N, L, D)
+        Q = self.linear(Q) # (N, L, D)
+        feature = self.linear(feature) # (N, L, D)
+
+        att_feature = torch.cat([feature, Q], dim = 2) # (N, L, 2D)
+        att_weight = self.fc(att_feature) # (N, L, 1)
+        dmask = dmask.unsqueeze(2)  # (N, L, 1)
+        att_weight = mask_logits(att_weight, dmask)  # (N, L ,1)
+
+        attention = F.softmax(att_weight, dim=1)  # (N, L, 1)
+
+        out = torch.bmm(feature.transpose(1, 2), attention)  # (N, D, 1)
+        out = out.squeeze(2)
+        # out = F.sigmoid(out)
+
+        return out    
+
+class ModifiedLinearAttention(nn.Module):
+    '''
+    re-implement of gat's attention
+    '''
+    def __init__(self, in_dim = 300, mem_dim = 300):
+        # in dim, the dimension of query vector
+        super().__init__()
+        self.linear = nn.Linear(in_dim, mem_dim)
+        self.linear2 = nn.Linear(1, mem_dim)
+        self.fc = nn.Linear(mem_dim * 2, 1)
+        self.leakyrelu = nn.LeakyReLU(1e-2)
+
+    def forward(self, feature, aspect_v, dmask):
+        '''
+        C feature/context [N, L, D]
+        Q dep_tags_v          [N, D]
+        mask dmask          [N, L]
+        '''
+
+        Q = self.linear(aspect_v) # (N, D)
+        Q = Q.unsqueeze(1)  # (N, 1, D)
+        Q = Q.expand_as(feature) # (N, L, D)
+        Q = self.linear(Q) # (N, L, D)
+        feature = self.linear(feature) # (N, L, D)
+
+        att_feature = torch.cat([feature, Q], dim = 2) # (N, L, 2D)
+        att_weight = self.fc(att_feature) # (N, L, 1)
+        dmask = dmask.unsqueeze(2)  # (N, L, 1)
+        att_weight = mask_logits(att_weight, dmask)  # (N, L ,1)
+
+        attention = F.softmax(att_weight, dim=1)  # (N, L, 1)
+
+        out = torch.bmm(feature.transpose(1, 2), attention)  # (N, D, 1)
+        out = out.squeeze(2)
+
+        cardinality = dmask.sum(1)
+        cout = self.linear2(cardinality)
+        out = F.sigmoid(out+cout)
+
+        return out    
 
 class DotprodAttention(nn.Module):
     def __init__(self):
